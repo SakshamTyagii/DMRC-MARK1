@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:dropdown_search/dropdown_search.dart';
 
 void main() {
   runApp(const MyApp());
@@ -54,40 +56,50 @@ class _MetroHomePageState extends State<MetroHomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Dropdown for 'from' station
-            DropdownButtonFormField<String>(
-              value: selectedFromStation,
-              items: stations.map((station) {
-                return DropdownMenuItem<String>(
-                  value: station['stop_name'],
-                  child: Text(station['stop_name']),
-                );
-              }).toList(),
+            // Searchable dropdown for 'from' station
+            DropdownSearch<String>(
+              popupProps: PopupProps.menu(
+                showSelectedItems: true,
+                showSearchBox: true,
+              ),
+              items: stations
+                  .map((station) => station['stop_name'] as String)
+                  .toList(),
               onChanged: (value) {
                 setState(() {
                   selectedFromStation = value;
                 });
               },
-              decoration: const InputDecoration(labelText: 'From Station'),
+              selectedItem: selectedFromStation, // Show the selected item
+              dropdownDecoratorProps: const DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(
+                  labelText: 'From Station',
+                ),
+              ),
             ),
-            
+
             const SizedBox(height: 16),
 
-            // Dropdown for 'to' station
-            DropdownButtonFormField<String>(
-              value: selectedToStation,
-              items: stations.map((station) {
-                return DropdownMenuItem<String>(
-                  value: station['stop_name'],
-                  child: Text(station['stop_name']),
-                );
-              }).toList(),
+            // Searchable dropdown for 'to' station
+            DropdownSearch<String>(
+              popupProps: PopupProps.menu(
+                showSelectedItems: true,
+                showSearchBox: true,
+              ),
+              items: stations
+                  .map((station) => station['stop_name'] as String)
+                  .toList(),
               onChanged: (value) {
                 setState(() {
                   selectedToStation = value;
                 });
               },
-              decoration: const InputDecoration(labelText: 'To Station'),
+              selectedItem: selectedToStation, // Show the selected item
+              dropdownDecoratorProps: const DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(
+                  labelText: 'To Station',
+                ),
+              ),
             ),
 
             const SizedBox(height: 16),
@@ -118,20 +130,21 @@ class _MetroHomePageState extends State<MetroHomePage> {
 
             // Button to navigate to the next page with selected options
             ElevatedButton(
-              onPressed: selectedFromStation != null && selectedToStation != null
-                  ? () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MetroMapPage(
-                            fromStation: selectedFromStation!,
-                            toStation: selectedToStation!,
-                            pathOption: selectedPathOption,
-                          ),
-                        ),
-                      );
-                    }
-                  : null,
+              onPressed:
+                  selectedFromStation != null && selectedToStation != null
+                      ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MetroMapPage(
+                                fromStation: selectedFromStation!,
+                                toStation: selectedToStation!,
+                                pathOption: selectedPathOption,
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
               child: const Text('Find Route'),
             ),
           ],
@@ -159,7 +172,10 @@ class MetroMapPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Route: $fromStation to $toStation'),
       ),
-      body: SplitScreenMap(fromStation: fromStation, toStation: toStation, pathOption: pathOption),
+      body: SplitScreenMap(
+          fromStation: fromStation,
+          toStation: toStation,
+          pathOption: pathOption),
     );
   }
 }
@@ -187,7 +203,8 @@ class SplitScreenMap extends StatelessWidget {
           child: Container(
             color: Colors.blueAccent,
             child: Center(
-              child: Text('Dynamic Map Placeholder\n($pathOption)', style: const TextStyle(color: Colors.white)),
+              child: Text('Dynamic Map Placeholder\n($pathOption)',
+                  style: const TextStyle(color: Colors.white)),
             ),
           ),
         ),
