@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:dropdown_search/dropdown_search.dart';
@@ -173,14 +172,15 @@ class MetroMapPage extends StatelessWidget {
         title: Text('Route: $fromStation to $toStation'),
       ),
       body: SplitScreenMap(
-          fromStation: fromStation,
-          toStation: toStation,
-          pathOption: pathOption),
+        fromStation: fromStation,
+        toStation: toStation,
+        pathOption: pathOption,
+      ),
     );
   }
 }
 
-class SplitScreenMap extends StatelessWidget {
+class SplitScreenMap extends StatefulWidget {
   final String fromStation;
   final String toStation;
   final String pathOption;
@@ -193,59 +193,109 @@ class SplitScreenMap extends StatelessWidget {
   });
 
   @override
+  _SplitScreenMapState createState() => _SplitScreenMapState();
+}
+
+class _SplitScreenMapState extends State<SplitScreenMap> {
+  bool isMapFullScreen = false;
+
+  @override
   Widget build(BuildContext context) {
-    // Split screen layout
-    return Row(
+    return Stack(
       children: [
-        // First half: Dynamic map showing travel path
-        Expanded(
-          flex: 1,
+        // Dynamic map
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 300),
+          top: isMapFullScreen ? 0 : MediaQuery.of(context).size.height * 0.5,
+          bottom: isMapFullScreen ? 0 : MediaQuery.of(context).size.height * 0.5,
+          left: 0,
+          right: 0,
           child: Container(
             color: Colors.blueAccent,
             child: Center(
-              child: Text('Dynamic Map Placeholder\n($pathOption)',
-                  style: const TextStyle(color: Colors.white)),
+              child: Text(
+                'Dynamic Map Placeholder\n(${widget.pathOption})',
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ),
         ),
-
-        // Second half: List of stations for the selected route
-        Expanded(
-          flex: 1,
+        // Station list
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 300),
+          top: isMapFullScreen ? MediaQuery.of(context).size.height : 0,
+          bottom: isMapFullScreen ? -MediaQuery.of(context).size.height : MediaQuery.of(context).size.height * 0.5,
+          left: 0,
+          right: 0,
           child: Container(
             color: Colors.white,
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: loadStations(), // You would calculate the path here
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (snapshot.hasData) {
-                  final stations = snapshot.data!;
-                  // Filter or find the path using fromStation, toStation, and pathOption
-                  return ListView.builder(
-                    itemCount: stations.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(stations[index]['stop_name']),
-                      );
+            child: Column(
+              children: [
+                Expanded(
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: loadStations(widget.fromStation, widget.toStation),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      } else if (snapshot.hasData) {
+                        final stations = snapshot.data!;
+                        return ListView.builder(
+                          itemCount: stations.length,
+                          itemBuilder: (context, index) {
+                            final station = stations[index];
+                            return ListTile(
+                              title: Text(station['stop_name']),
+                            );
+                          },
+                        );
+                      } else {
+                        return const Center(child: Text('No data available'));
+                      }
                     },
-                  );
-                } else {
-                  return const Center(child: Text('No data available'));
-                }
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Toggle arrow
+        Positioned(
+          top: isMapFullScreen
+              ? MediaQuery.of(context).size.height * 0.9
+              : MediaQuery.of(context).size.height * 0.4,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  isMapFullScreen = !isMapFullScreen;
+                });
               },
+              child: Icon(
+                isMapFullScreen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                size: 48,
+                color: Colors.black54,
+              ),
             ),
           ),
         ),
       ],
     );
   }
-}
 
-Future<List<Map<String, dynamic>>> loadStations() async {
-  final jsonString = await rootBundle.loadString('assets/stops.json');
-  final jsonData = jsonDecode(jsonString);
-  return List<Map<String, dynamic>>.from(jsonData);
+  // Dummy function to get stations for the route
+  Future<List<Map<String, dynamic>>> loadStations(String from, String to) async {
+    // Simulate fetching route data based on the selected stations
+    return [
+      {"stop_name": "Dilshad Garden"},
+      {"stop_name": "Jhilmil"},
+      {"stop_name": "Mansrover Park"},
+      {"stop_name": "Shahdara"},
+      {"stop_name": "Seelampur"},
+      {"stop_name": "Welcome"},
+    ];
+  }
 }
